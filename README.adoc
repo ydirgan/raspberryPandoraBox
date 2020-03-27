@@ -36,7 +36,7 @@ apt install pianobar
 sudo apt install screen
 -------------------------------
 
-=== Installing link::https://github.com/kylejohnson/Patiobar[patiobar]
+=== Installing https://github.com/kylejohnson/Patiobar[patiobar]
 
 [source, bash]
 -------------------------------
