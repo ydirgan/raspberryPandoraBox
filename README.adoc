@@ -1,0 +1,157 @@
+:scrollbar:
+:data-uri:
+:toc2:
+:imagesdir: images
+
+= Pandora's Box on a Raspberry pi 3
+
+== Description
+Using pianobar and patiobar we can create an excelent appliance using a raspberry pi and Pandora radio.
+
+Audience: Thinkerers, Music lovers
+
+:numbered:
+
+== Installing what we need on raspbian
+
+=== We need to fix the popping sound of alsa with pianobar using oss
+
+[source, bash]
+-------------------------------
+sudo apt install alsa-oss
+
+sudo  vi /etc/libao.conf #for remove of poping and clicking of the sound
+
+default_driver=oss
+quiet
+-------------------------------
+
+If you are outside US check for a proxy list for using one in the US - https://www.us-proxy.org/
+
+=== Installing pianobar and screen
+
+[source, bash]
+-------------------------------
+apt install pianobar
+sudo apt install screen
+-------------------------------
+
+=== Installing link::https://github.com/kylejohnson/Patiobar[patiobar]
+
+[source, bash]
+-------------------------------
+apt install git
+cd ~ 
+
+git clone https://github.com/kylejohnson/Patiobar.git
+cd Patiobar
+bash install.sh
+-------------------------------
+
+== Configuring patiobar
+
+*binary directory for excecutables*
+
+[source, bash]
+-------------------------------
+cd ~
+mkdir bin
+vi .bashrc #add at the end
+export PATH="$HOME/bin:$PATH"
+source .bashrc
+-------------------------------
+
+*With oss we need to tweek the way we invoke pianobar*
+
+[source, bash]
+-------------------------------
+vi ~/bin/pb.start
+#!/bin/bash
+aoss pianobar
+chmod a+x /bin/pb.sh
+-------------------------------
+
+*These are the scripts for starting and stopping patiobar*
+
+*Starting patiobar script*
+[source, bash]
+-------------------------------
+vi  ~/bin/pbstart
+#!/bin/bash
+cd /home/pi/Patiobar
+# Kill any old Patiobar processes running
+pbstop 1> /dev/null
+#screen -S pianobar -d -m bash -c 'pianobar'
+screen -S pb.sh -d -m bash -c 'pb.sh'
+# The "patiobar" in the end is not needed and is used as an identifier so we can kill it when stopping.
+# Otherwise, we might kill other "node index.js" processes.
+node index.js patiobar > /dev/null 2>&1 &
+echo "Go to http://$(hostname):3000/ to launch the Web interface."
+-------------------------------
+
+*Stopping patiobar*
+[source, bash]
+-------------------------------
+vi ~/bin/pbstop
+#!/bin/bash
+echo Closing out Pandora processes...
+pkill -xf "SCREEN -S pianobar -d -m bash -c pianobar"
+pkill -xf "node index.js patiobar"
+echo done
+-------------------------------
+
+*make them executables*
+
+[source, bash]
+-------------------------------
+chmod u+x ~/bin/pbstart
+chmod u+x ~/bin/pbstop
+-------------------------------
+
+== Configuring pianobar
+
+pianobar config file is created when installing patiobar. We only need to change the username and password. Also if you are outside US you will need to set a proxy.
+
+[source, bash]
+-------------------------------
+vi .config/pianobar/config
+
+user = username
+password = passw
+#autostart_station = 3993307669554546194 #this is a station to start when pianobar is executed at first time
+audio_quality = high
+control_proxy = http://45.79.144.136:8080 #this is the proxy - can be located at us-proxy.org
+event_command = /home/pi/Patiobar/eventcmd.sh
+fifo = /home/pi/Patiobar/ctl
+tls_fingerprint = FC2E6AF49FC63AEDAD1078DC22D1185B809E7534 #this fingerprint could be different as patiobar creates it in the installation process
+-------------------------------
+
+== Check if pianobar is rworking properly
+[source, bash]
+-------------------------------
+aoss pianobar
+
+Ctrl-C or q #to terminate
+-------------------------------
+
+== Start patiobar to check if everything is OK. Access the console in https:://raspberrypiIP:3000
+[source, bash]
+-------------------------------
+pbstart
+-------------------------------
+
+== Making this to start at boot time
+
+[source, bash]
+-------------------------------
+vi /etc/rc.local
+
+#before exit 0 add the following line
+
+sleep 15 && sudo -iu pi /home/pi/bin/pbstart
+
+reboot
+-------------------------------
+
+That's it. It will start at boot time and will be playing the song you ever like it.
+
